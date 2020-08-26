@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 usage="$(basename "$0") [-h,--help] [--verbose]
 
