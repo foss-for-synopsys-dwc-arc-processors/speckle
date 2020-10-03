@@ -9,7 +9,7 @@ where:
 for i in "$@"
 do
 case $i in
-    --config)
+    --verbose)
     verbose=yes
     shift # past argument=value
     ;;
