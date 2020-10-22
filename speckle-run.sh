@@ -4,12 +4,12 @@ usage="$(basename "$0") [-h,--help] [--verbose]
 
 where:
     -h or --help shows this help text
-    --verbose - prints complete execution command-lines"
+    -v or --verbose - prints complete execution command-lines"
 
 for i in "$@"
 do
 case $i in
-    --verbose)
+    -v|--verbose)
     verbose=yes
     shift # past argument=value
     ;;
