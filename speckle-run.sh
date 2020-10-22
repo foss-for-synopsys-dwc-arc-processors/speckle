@@ -4,6 +4,7 @@ usage="$(basename "$0") [-h,--help] [--verbose]
 
 where:
     -h or --help shows this help text
+    -j or --jobs specifies amount of parallel executions of the same test
     -v or --verbose - prints complete execution command-lines"
 
 for i in "$@"
@@ -11,6 +12,10 @@ do
 case $i in
     -v|--verbose)
     verbose=yes
+    shift # past argument=value
+    ;;
+    -j|--jobs=*)
+    jobs="${i#*=}"
     shift # past argument=value
     ;;
     -h|--help)
@@ -23,6 +28,8 @@ case $i in
     ;;
 esac
 done
+
+jobs="${jobs:-1}"
 
 # This way we may execute this script from any location
 base_dir=$(dirname $(readlink -f $0))
@@ -48,15 +55,19 @@ for dir in ${base_dir}/benchmarks/*; do
     count=0
     for input in "${commands[@]}"; do
         if [[ ${input:0:1} != '#' ]]; then # allow us to comment out lines in the cmd files
-            cmd="./${short_exe} ${input} > ${base_dir}/output/${short_exe}.${count}.out"
-            if [ "$verbose" == "yes" ]; then
-                echo "workload=[${cmd}]"
-            fi
-            eval ${cmd}
-            ((count++))
+            # Run multiple instances if requested
+            for instance in $(seq 1 $jobs); do
+                cmd="./${short_exe} ${input} > ${base_dir}/output/${short_exe}.${count}.out"
+                if [ "$verbose" == "yes" ]; then
+                    echo "workload=[${cmd}], instance #${instance}"
+                fi
+                eval ${cmd} &
+                ((count++))
+            done
         fi
     done
     popd > /dev/null
+    wait # Wait until all started above instances are done
     echo "${b} done in $SECONDS seconds"
 done
 
