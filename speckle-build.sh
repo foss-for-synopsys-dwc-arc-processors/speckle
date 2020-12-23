@@ -58,6 +58,7 @@ cp ${config}.cfg $SPEC_DIR/config/
 for b in ${benchmarks[@]}; do
     # Semi-hardcoded path assuming SPEC installation tree is clean, thus ".0000" in the end
     spec_run_dir=$SPEC_DIR/benchspec/CPU2006/$b/run/run_base_${size}_${config}.0000;
+    spec_output_data_dir=$SPEC_DIR/benchspec/CPU2006/$b/data/${size}/output;
     short_exe=${b##*.} # cut off the numbers ###.short_exe
     echo "Working on: ${short_exe}"
 
@@ -80,6 +81,8 @@ for b in ${benchmarks[@]}; do
     # Copy benchmark, command & input data
     # Create target folder for the benchmark
     mkdir -p $copy_dir/benchmarks/$b
+    # Create target folder for the reference results
+    mkdir -p $copy_dir/output-reference/$b
     # Copy file with commands for this benchmark, note we drop "size" part
     # This allows us to use universal script for execution later
     cp commands/$b.${size}.cmd $copy_dir/commands/$b.cmd
@@ -97,6 +100,10 @@ for b in ${benchmarks[@]}; do
     fi
     # Get rid of meaningless "_base" in benchmark name, that simplifies execution script
     mv $copy_dir/benchmarks/$b/${short_exe}_base.${config} $copy_dir/benchmarks/$b/${short_exe}
+    # Copy contents of "output" folder: reference output data
+    for f in $spec_output_data_dir/*; do
+        cp $f $copy_dir/output-reference/$b/$(basename "$f")
+    done
 done
 
 echo "Copying over execution script"
