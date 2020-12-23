@@ -58,6 +58,10 @@ for dir in ${base_dir}/benchmarks/*; do
             # Run multiple instances if requested
             for instance in $(seq 1 $jobs); do
                 cmd="./${short_exe} ${input} > ${base_dir}/output/${short_exe}.${count}.out"
+                # Use set externally "prefix" via SPECKLE_CMD_PREFIX env var, e.g. "perf stat"
+                if [ "${SPECKLE_CMD_PREFIX}" ]; then
+                    cmd="${SPECKLE_CMD_PREFIX} ${cmd}"
+                fi
                 if [ "$verbose" == "yes" ]; then
                     echo "workload=[${cmd}], instance #${instance}"
                 fi
