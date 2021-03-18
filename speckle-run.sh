@@ -39,8 +39,6 @@ for dir in ${base_dir}/benchmarks/*; do
     b="$(basename "${dir}")"
     echo -e "\nExecuting: ${b}"
 
-    # Reset timer
-    SECONDS=0
     pushd ${base_dir}/benchmarks/${b} > /dev/null
     short_exe=${b##*.} # cut off the numbers ###.short_exe
     # There's one exception in a naming scheme though...
@@ -53,6 +51,7 @@ for dir in ${base_dir}/benchmarks/*; do
 
     # run each workload
     count=0
+    TOT=0
     for input in "${commands[@]}"; do
 
         # skip any comment out lines in the cmd files
@@ -64,17 +63,30 @@ for dir in ${base_dir}/benchmarks/*; do
         cmd="${SPECKLE_CMD_PREFIX} ./${short_exe} ${input} > ${base_dir}/output/${short_exe}.${count}.out"
 
         # Run multiple instances if requested
-        for instance in $(seq 1 $jobs); do
+        if [ $jobs -eq 1 ]; then
             if [ "$verbose" == "yes" ]; then
-                echo "workload=[${cmd}], instance #${instance}"
+                echo "workload=[${cmd}]"
             fi
-            eval ${cmd} &
+            SECONDS=0
+            eval ${cmd}
+            TOT=$(($TOT + $SECONDS))
+            echo "== $SECONDS seconds"
             ((count++))
-        done
+        else
+            for instance in $(seq 1 $jobs); do
+                if [ "$verbose" == "yes" ]; then
+                    echo "workload=[${cmd}], instance #${instance}"
+                fi
+                eval ${cmd} &
+                ((count++))
+            done
+            wait # Wait until all started above instances are done
+            TOT=$(($TOT + $SECONDS))
+            echo "== $SECONDS seconds"
+        fi
     done
+    echo "==== ${b} all done in $TOT seconds"
     popd > /dev/null
-    wait # Wait until all started above instances are done
-    echo "${b} done in $SECONDS seconds"
 done
 
 echo "All done!"
