@@ -30,7 +30,7 @@ mkdir -p ${base_dir}/output
 
 for dir in ${base_dir}/benchmarks/*; do
     b="$(basename "${dir}")"
-    echo "Executing: ${b}"
+    echo -e "\nExecuting: ${b}"
 
     # Reset timer
     SECONDS=0
@@ -41,25 +41,30 @@ for dir in ${base_dir}/benchmarks/*; do
         short_exe=Xalan
     fi
 
-    # read the command file
+    # Read the command file
     IFS=$'\n' read -d '' -r -a commands < ${base_dir}/commands/${b}.cmd
 
-    # run each workload
+    # Run each workload
     count=0
     for input in "${commands[@]}"; do
-        if [[ ${input:0:1} != '#' ]]; then # allow us to comment out lines in the cmd files
-            cmd="./${short_exe} ${input} > ${base_dir}/output/${short_exe}.${count}.out"
-            # Use set externally "prefix" via SPECKLE_CMD_PREFIX env var, e.g. "perf stat"
-            if [ "${SPECKLE_CMD_PREFIX}" ]; then
-                cmd="${SPECKLE_CMD_PREFIX} ${cmd}"
-            fi
 
-            if [ "$verbose" == "yes" ]; then
-                echo "workload=[${cmd}]"
-            fi
-            eval ${cmd}
-            ((count++))
+        # skip any comment out lines in the cmd files
+        if [[ ${input:0:1} == '#' ]]; then
+            continue
         fi
+
+        # SPECKLE_CMD_PREFIX env var could be used for e.g. "perf stat"
+        cmd="${SPECKLE_CMD_PREFIX} ./${short_exe} ${input} > ${base_dir}/output/${short_exe}.${count}.out"
+
+        # Print full command-line we're going to execute if in verbose mode
+        if [ "$verbose" == "yes" ]; then
+            echo "workload=[${cmd}], instance #${instance}"
+        fi
+
+        # Really execute full command
+        eval ${cmd}
+
+        ((count++))
     done
     popd > /dev/null
     echo "${b} done in $SECONDS seconds"
