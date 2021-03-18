@@ -37,7 +37,7 @@ mkdir -p ${base_dir}/output
 
 for dir in ${base_dir}/benchmarks/*; do
     b="$(basename "${dir}")"
-    echo "Executing: ${b}"
+    echo -e "\nExecuting: ${b}"
 
     # Reset timer
     SECONDS=0
@@ -54,21 +54,23 @@ for dir in ${base_dir}/benchmarks/*; do
     # run each workload
     count=0
     for input in "${commands[@]}"; do
-        if [[ ${input:0:1} != '#' ]]; then # allow us to comment out lines in the cmd files
-            # Run multiple instances if requested
-            for instance in $(seq 1 $jobs); do
-                cmd="./${short_exe} ${input} > ${base_dir}/output/${short_exe}.${count}.out"
-                # Use set externally "prefix" via SPECKLE_CMD_PREFIX env var, e.g. "perf stat"
-                if [ "${SPECKLE_CMD_PREFIX}" ]; then
-                    cmd="${SPECKLE_CMD_PREFIX} ${cmd}"
-                fi
-                if [ "$verbose" == "yes" ]; then
-                    echo "workload=[${cmd}], instance #${instance}"
-                fi
-                eval ${cmd} &
-                ((count++))
-            done
+
+        # skip any comment out lines in the cmd files
+        if [[ ${input:0:1} == '#' ]]; then
+            continue
         fi
+
+        # SPECKLE_CMD_PREFIX env var could be used for e.g. "perf stat"
+        cmd="${SPECKLE_CMD_PREFIX} ./${short_exe} ${input} > ${base_dir}/output/${short_exe}.${count}.out"
+
+        # Run multiple instances if requested
+        for instance in $(seq 1 $jobs); do
+            if [ "$verbose" == "yes" ]; then
+                echo "workload=[${cmd}], instance #${instance}"
+            fi
+            eval ${cmd} &
+            ((count++))
+        done
     done
     popd > /dev/null
     wait # Wait until all started above instances are done
